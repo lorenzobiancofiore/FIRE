@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIRE Calculator — Indipendenza Finanziaria</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2128;
+    --border: #2a2d35;
+    --accent: #f5a623;
+    --accent2: #e07b00;
+    --green: #3dd68c;
+    --red: #f56565;
+    --blue: #60a5fa;
+    --text: #e8e9eb;
+    --muted: #8b8f99;
+    --radius: 10px;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 0 22px;
+    text-align: center;
+    background: linear-gradient(180deg, #12141a 0%, var(--bg) 100%);
+  }
+  .logo-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(245,166,35,.1);
+    border: 1px solid rgba(245,166,35,.25);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+  header h1 {
+    font-size: clamp(26px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  header h1 span { color: var(--accent); }
+  header p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* NAV PILLS */
+  .nav-pills {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    padding: 0 16px;
+  }
+  .nav-pills a {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    transition: all .2s;
+  }
+  .nav-pills a:hover { color: var(--text); border-color: var(--accent); background: rgba(245,166,35,.06); }
+
+  /* LAYOUT */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 16px; }
+  .page { padding: 48px 0 80px; }
+
+  /* SECTIONS */
+  section {
+    margin-bottom: 56px;
+    scroll-margin-top: 24px;
+  }
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 38px; height: 38px;
+    background: rgba(245,166,35,.12);
+    border: 1px solid rgba(245,166,35,.2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .section-title h2 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+  .section-title p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 2px;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .card + .card { margin-top: 12px; }
+
+  /* SWR SELECTOR */
+  .swr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .swr-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all .15s;
+    color: var(--text);
+  }
+  .swr-btn:hover { border-color: var(--accent); background: rgba(245,166,35,.05); }
+  .swr-btn.active {
+    border-color: var(--accent);
+    background: rgba(245,166,35,.1);
+  }
+  .swr-btn .mult { font-size: 18px; font-weight: 800; color: var(--accent); }
+  .swr-btn .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* SPESE TABLE */
+  .spese-table { width: 100%; border-collapse: collapse; }
+  .spese-table th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .spese-table td { padding: 8px 12px; border-bottom: 1px solid rgba(42,45,53,.5); }
+  .spese-table td:last-child { width: 40px; }
+  .spese-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: var(--font);
+    padding: 6px 10px;
+    width: 100%;
+    transition: border-color .15s;
+  }
+  .spese-input:focus { outline: none; border-color: var(--accent); }
+  .spese-date {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: var(--font);
+    padding: 6px 8px;
+    width: 110px;
+    transition: border-color .15s;
+    cursor: pointer;
+  }
+  .spese-date:focus { outline: none; border-color: var(--accent); color: var(--text); }
+  .spese-date::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+  .spesa-temp-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(96,165,250,.12);
+    color: var(--blue);
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .spesa-scaduta-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(61,214,140,.12);
+    color: var(--green);
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .spesa-futura-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(161,139,255,.15);
+    color: #a78bfa;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .del-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .del-btn:hover { color: var(--red); border-color: var(--red); background: rgba(245,101,101,.08); }
+  .add-btn {
+    margin-top: 12px;
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font);
+    padding: 8px 16px;
+    width: 100%;
+    transition: all .15s;
+  }
+  .add-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(245,166,35,.04); }
+
+  /* FIRE NUMBER DISPLAY */
+  .fire-number-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .fire-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    transition: border-color .2s;
+  }
+  .fire-card.active-swr { border-color: var(--accent); background: rgba(245,166,35,.06); }
+  .fire-card .fc-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .fire-card .fc-num { font-size: clamp(20px, 3vw, 28px); font-weight: 800; color: var(--text); margin: 6px 0; letter-spacing: -.02em; }
+  .fire-card .fc-sub { font-size: 12px; color: var(--muted); }
+
+  .big-result {
+    background: linear-gradient(135deg, rgba(245,166,35,.12) 0%, rgba(245,166,35,.04) 100%);
+    border: 1px solid rgba(245,166,35,.3);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .big-result .label { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  .big-result .amount { font-size: clamp(32px, 6vw, 52px); font-weight: 900; letter-spacing: -.03em; color: var(--text); margin: 6px 0; }
+  .big-result .sub { font-size: 13px; color: var(--muted); }
+
+  /* FORM GRID */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .form-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: var(--font);
+    padding: 10px 12px;
+    width: 100%;
+    transition: border-color .15s;
+  }
+  .form-input:focus { outline: none; border-color: var(--accent); }
+  .form-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* RESULT BOXES */
+  .result-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .result-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .result-box .rb-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .result-box .rb-val { font-size: 22px; font-weight: 800; color: var(--text); margin-top: 4px; }
+  .result-box .rb-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .result-box.highlight { border-color: var(--green); background: rgba(61,214,140,.06); }
+  .result-box.highlight .rb-val { color: var(--green); }
+
+  /* BUTTONS */
+  .btn {
+    background: var(--accent);
+    color: #0e0f11;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font);
+    padding: 11px 20px;
+    cursor: pointer;
+    transition: background .15s;
+    width: 100%;
+    margin-top: 16px;
+  }
+  .btn:hover { background: var(--accent2); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* CHART */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    position: relative;
+  }
+  .chart-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 220px;
+    color: var(--muted);
+    font-size: 14px;
+    gap: 8px;
+  }
+  .chart-placeholder .icon { font-size: 36px; opacity: .4; }
+
+  /* FISCALE TABLE */
+  .table-responsive { overflow-x: auto; }
+  table.fiscal-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.fiscal-table th {
+    background: var(--surface2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  table.fiscal-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  table.fiscal-table tr:last-child td { border-bottom: none; }
+  table.fiscal-table td.accent { color: var(--accent); font-weight: 700; }
+
+  /* RANGE SLIDER */
+  .slider-group { margin-top: 8px; }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .slider-val {
+    min-width: 48px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--accent);
+  }
+
+  /* BADGE */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: .05em;
+  }
+  .badge-green { background: rgba(61,214,140,.15); color: var(--green); }
+  .badge-orange { background: rgba(245,166,35,.15); color: var(--accent); }
+  .badge-red { background: rgba(245,101,101,.15); color: var(--red); }
+
+  /* MONTE CARLO */
+  .mc-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .mc-stat {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .mc-stat .ms-val { font-size: 20px; font-weight: 800; }
+  .mc-stat .ms-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* INFO BOX */
+  .info-box {
+    background: rgba(96,165,250,.06);
+    border: 1px solid rgba(96,165,250,.2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 14px;
+    line-height: 1.6;
+  }
+  .info-box strong { color: var(--blue); }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ASSET TABLE */
+  .asset-rend-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font);
+    padding: 5px 8px;
+    width: 80px;
+    text-align: right;
+    transition: border-color .15s;
+  }
+  .asset-rend-input:focus { outline: none; border-color: var(--accent); }
+  .asset-color-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  /* RESULT ROW 4 cols */
+  .result-row-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 600px) { .result-row-4 { grid-template-columns: repeat(2,1fr); } }
+  .export-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .export-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .export-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .export-card p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .btn-outline {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    width: 100%;
+    transition: all .15s;
+    margin-top: 0;
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: rgba(245,166,35,.05); }
+  .btn-outline.green { border-color: rgba(61,214,140,.3); color: var(--green); }
+  .btn-outline.green:hover { border-color: var(--green); background: rgba(61,214,140,.06); }
+  .snapshot-label {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 8px 10px;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .snapshot-label:focus { outline: none; border-color: var(--accent); color: var(--text); }
+
+  /* STORICO */
+  .storico-upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .storico-upload-zone:hover, .storico-upload-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(245,166,35,.04);
+  }
+  .storico-upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .storico-upload-zone .uz-icon { font-size: 32px; margin-bottom: 8px; }
+  .storico-upload-zone .uz-title { font-size: 14px; font-weight: 600; }
+  .storico-upload-zone .uz-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .storico-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .storico-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .storico-item .si-date { font-size: 12px; font-weight: 700; color: var(--accent); min-width: 80px; }
+  .storico-item .si-label { font-size: 13px; font-weight: 600; flex: 1; }
+  .storico-item .si-val { font-size: 13px; color: var(--green); font-weight: 700; }
+  .storico-item .si-delta { font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 700; }
+  .storico-item .si-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; transition: color .15s; }
+  .storico-item .si-del:hover { color: var(--red); }
+
+  .storico-gap {
+    background: rgba(245,101,101,.06);
+    border: 1px solid rgba(245,101,101,.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--red);
+    margin: -4px 0 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .progressione-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .prog-stat {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .prog-stat .ps-val { font-size: 18px; font-weight: 800; }
+  .prog-stat .ps-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .fire-number-grid { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .result-row { grid-template-columns: 1fr; }
+    .mc-stats { grid-template-columns: repeat(2, 1fr); }
+    .swr-grid { grid-template-columns: 1fr 1fr; }
+    .export-grid { grid-template-columns: 1fr; }
+    .progressione-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="logo-tag">Strumento educativo</div>
+    <h1>FIRE <span>Calculator</span></h1>
+    <p>Calcola il capitale necessario per vivere di rendita · Basato sulla Regola del 4% e varianti</p>
+    <nav class="nav-pills">
+      <a href="#spese">💸 Spese</a>
+      <a href="#coast">🏖️ Coast FIRE</a>
+      <a href="#anni">📅 Anni al FIRE</a>
+      <a href="#fiscale">🇮🇹 Fiscalità IT</a>
+      <a href="#evoluzione">📈 Evoluzione</a>
+      <a href="#montecarlo">🎲 Monte Carlo</a>
+      <a href="#esporta">💾 Snapshot</a>
+      <a href="#storico">📊 Storico</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container">
+
+    <!-- ===== 1. SPESE & FIRE NUMBER ===== -->
+    <section id="spese">
+      <div class="section-header">
+        <div class="section-icon">💸</div>
+        <div class="section-title">
+          <h2>Spese mensili & FIRE Number</h2>
+          <p>Inserisci le tue voci di spesa. La regola del 300/400 calcola il capitale necessario.</p>
+        </div>
+      </div>
+
+      <!-- SWR Selector -->
+      <div class="swr-grid">
+        <button class="swr-btn" data-mult="240" onclick="setSWR(this, 240, 5)">
+          <div class="mult">× 240</div>
+          <div class="label">SWR 5% — Ottimistico</div>
+        </button>
+        <button class="swr-btn active" data-mult="300" onclick="setSWR(this, 300, 4)">
+          <div class="mult">× 300</div>
+          <div class="label">SWR 4% — Standard USA</div>
+        </button>
+        <button class="swr-btn" data-mult="333" onclick="setSWR(this, 333, 3.6)">
+          <div class="mult">× 333</div>
+          <div class="label">SWR 3.6% — Morningstar</div>
+        </button>
+        <button class="swr-btn" data-mult="360" onclick="setSWR(this, 360, 3.3)">
+          <div class="mult">× 360</div>
+          <div class="label">SWR 3.3% — Prudente</div>
+        </button>
+        <button class="swr-btn" data-mult="400" onclick="setSWR(this, 400, 3)">
+          <div class="mult">× 400</div>
+          <div class="label">SWR 3% — Europa (consigliato)</div>
+        </button>
+      </div>
+
+      <!-- Tabella Spese -->
+      <div class="card">
+        <table class="spese-table" id="speseTable">
+          <thead>
+            <tr>
+              <th>Voce di spesa</th>
+              <th>Mensile (€)</th>
+              <th>Inizio (opz.)</th>
+              <th>Fine (opz.)</th>
+              <th>Target FIRE</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="speseBody"></tbody>
+        </table>
+        <button class="add-btn" onclick="addSpesa()">+ Aggiungi voce</button>
+      </div>
+
+      <!-- FIRE Number Results -->
+      <div id="fireResults" style="margin-top:20px;">
+        <div class="big-result">
+          <div class="label">Il tuo FIRE Number (SWR selezionato)</div>
+          <div class="amount" id="mainFireNum">—</div>
+          <div class="sub" id="mainFireSub">Inserisci le tue spese mensili ↑</div>
+        </div>
+        <div class="fire-number-grid">
+          <div class="fire-card" id="fc240">
+            <div class="fc-label">SWR 5% · × 240</div>
+            <div class="fc-num" id="fn240">—</div>
+            <div class="fc-sub">Ottimistico</div>
+          </div>
+          <div class="fire-card active-swr" id="fc300">
+            <div class="fc-label">SWR 4% · × 300</div>
+            <div class="fc-num" id="fn300">—</div>
+            <div class="fc-sub">Standard USA</div>
+          </div>
+          <div class="fire-card" id="fc400">
+            <div class="fc-label">SWR 3% · × 400</div>
+            <div class="fc-num" id="fn400">—</div>
+            <div class="fc-sub">Europa / Prudente</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grafico torta spese -->
+      <div class="chart-wrap" style="margin-top:20px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--muted);">DISTRIBUZIONE SPESE MENSILI</div>
+        <div id="pieChartWrap">
+          <div class="chart-placeholder" id="piePlaceholder">
+            <div class="icon">🥧</div>
+            <div>Inserisci le spese per visualizzare il grafico</div>
+          </div>
+          <canvas id="pieChart" style="display:none; max-height:280px;"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 2. COAST FIRE ===== -->
+    <section id="coast">
+      <div class="section-header">
+        <div class="section-icon">🏖️</div>
+        <div class="section-title">
+          <h2>Coast FIRE</h2>
+          <p>Hai già abbastanza investito da lasciare che il mercato faccia il resto?</p>
+        </div>
+      </div>
+      <div class="card">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Il Coast FIRE è il capitale che, se investito oggi, raggiungerà il tuo FIRE number da solo grazie alla crescita composta — senza versare altro.</p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>FIRE Number target (€)</label>
+            <input type="number" class="form-input" id="coastFireTarget" placeholder="es. 1.000.000" oninput="calcCoast()">
+            <div class="form-hint">Si aggiorna automaticamente dalla sezione spese</div>
+          </div>
+          <div class="form-group">
+            <label>Patrimonio attuale investito (€)</label>
+            <input type="number" class="form-input" id="coastPatrimonio" placeholder="es. 150.000" oninput="calcCoast()">
+          </div>
+          <div class="form-group">
+            <label>Età attuale</label>
+            <input type="number" class="form-input" id="coastEtaAttuale" placeholder="es. 35" min="18" max="80" oninput="calcCoast()">
+          </div>
+          <div class="form-group">
+            <label>Età target FIRE</label>
+            <input type="number" class="form-input" id="coastEtaFire" placeholder="es. 55" min="20" max="90" oninput="calcCoast()">
+          </div>
+          <div class="form-group">
+            <label>Rendimento reale annuo (%)</label>
+            <div class="slider-group">
+              <div class="slider-row">
+                <input type="range" id="coastRend" min="1" max="10" step="0.5" value="5" oninput="document.getElementById('coastRendVal').textContent=this.value+'%';calcCoast()">
+                <span class="slider-val" id="coastRendVal">5%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="result-row" id="coastResults" style="display:none;">
+          <div class="result-box">
+            <div class="rb-label">Coast FIRE Number</div>
+            <div class="rb-val" id="coastNum">—</div>
+            <div class="rb-sub">Capitale necessario oggi</div>
+          </div>
+          <div class="result-box" id="coastStatusBox">
+            <div class="rb-label">Situazione attuale</div>
+            <div class="rb-val" id="coastDiff">—</div>
+            <div class="rb-sub" id="coastDiffSub">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 3. ANNI AL FIRE ===== -->
+    <section id="anni">
+      <div class="section-header">
+        <div class="section-icon">📅</div>
+        <div class="section-title">
+          <h2>Anni al FIRE — portafoglio multi-asset</h2>
+          <p>Traccia ogni voce investita con il suo rendimento e contributo mensile. Aggiungi anche la pensione pubblica.</p>
+        </div>
+      </div>
+
+      <!-- ASSET TABLE -->
+      <div class="card" style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Voci di investimento</div>
+        <table class="spese-table" id="assetTable">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Valore attuale (€)</th>
+              <th>Contributo mensile (€)</th>
+              <th>Rendimento annuo (%)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="assetBody"></tbody>
+        </table>
+        <button class="add-btn" onclick="addAsset()">+ Aggiungi voce</button>
+      </div>
+
+      <!-- PENSIONE -->
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">🇮🇹 Pensione pubblica italiana</div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;">
+            <input type="checkbox" id="pensAttivaCheck" onchange="calcAnni()" style="accent-color:var(--accent);width:15px;height:15px;">
+            <span style="font-size:13px;color:var(--muted);">Includi nel calcolo</span>
+          </label>
+        </div>
+        <div id="pensForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Rendita mensile stimata (€ oggi)</label>
+              <input type="number" class="form-input" id="pensImporto" value="1500" oninput="calcAnni()">
+              <div class="form-hint">Importo a valori odierni, verrà attualizzato</div>
+            </div>
+            <div class="form-group">
+              <label>Anno inizio pensione</label>
+              <input type="number" class="form-input" id="pensAnno" value="2052" min="2025" max="2080" oninput="calcAnni()">
+            </div>
+            <div class="form-group">
+              <label>Inflazione per attualizzazione (%)</label>
+              <div class="slider-group">
+                <div class="slider-row">
+                  <input type="range" id="pensInflazione" min="0.5" max="4" step="0.1" value="2" oninput="document.getElementById('pensInflVal').textContent=this.value+'%';calcAnni()">
+                  <span class="slider-val" id="pensInflVal">2%</span>
+                </div>
+                <div class="form-hint">Usato per rivalutare i €1.500 odierni al valore futuro</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Rendimento del capitale-pensione (%)</label>
+              <div class="slider-group">
+                <div class="slider-row">
+                  <input type="range" id="pensRendimento" min="1" max="8" step="0.5" value="3" oninput="document.getElementById('pensRendVal').textContent=this.value+'%';calcAnni()">
+                  <span class="slider-val" id="pensRendVal">3%</span>
+                </div>
+                <div class="form-hint">Usato per calcolare il capitale equivalente (rendita / SWR)</div>
+              </div>
+            </div>
+          </div>
+          <div id="pensResult" style="display:none;margin-top:14px;">
+            <div class="result-row">
+              <div class="result-box">
+                <div class="rb-label">Rendita attualizzata al <span id="pensAnnoLabel">2052</span></div>
+                <div class="rb-val" id="pensRentaFutura">—</div>
+                <div class="rb-sub">€/mese in termini futuri</div>
+              </div>
+              <div class="result-box highlight">
+                <div class="rb-label">Capitale equivalente (FIRE offset)</div>
+                <div class="rb-val" id="pensCapitale">—</div>
+                <div class="rb-sub">Riduce il FIRE number di questa cifra</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PARAMETRI GLOBALI -->
+      <div class="card" style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Parametri globali</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>FIRE Number target (€)</label>
+            <input type="number" class="form-input" id="anniFireTarget" placeholder="es. 1.000.000" oninput="calcAnni()">
+            <div class="form-hint">Si aggiorna dalla sezione spese · puoi modificarlo manualmente</div>
+          </div>
+          <div class="form-group">
+            <label>Anno attuale / di partenza</label>
+            <input type="number" class="form-input" id="anniAnnoStart" value="2025" min="2020" max="2040" oninput="calcAnni()">
+          </div>
+        </div>
+      </div>
+
+      <!-- RISULTATI -->
+      <div class="result-row" id="anniResults" style="display:none;margin-bottom:12px;">
+        <div class="result-box highlight">
+          <div class="rb-label">Anni al FIRE</div>
+          <div class="rb-val" id="anniNum">—</div>
+          <div class="rb-sub" id="anniSub">—</div>
+        </div>
+        <div class="result-box">
+          <div class="rb-label">Patrimonio totale stimato</div>
+          <div class="rb-val" id="anniPatTot">—</div>
+          <div class="rb-sub">Somma di tutti gli asset al FIRE</div>
+        </div>
+        <div class="result-box">
+          <div class="rb-label">Contributo mensile totale</div>
+          <div class="rb-val" id="anniContribTot">—</div>
+          <div class="rb-sub">Tutti gli asset combinati</div>
+        </div>
+        <div class="result-box">
+          <div class="rb-label">Tasso di risparmio</div>
+          <div class="rb-val" id="savingsRate">—</div>
+          <div class="rb-sub">Contributi / (Spese + Contributi)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 4. FISCALITÀ ITALIANA ===== -->
+    <section id="fiscale">
+      <div class="section-header">
+        <div class="section-icon">🇮🇹</div>
+        <div class="section-title">
+          <h2>Correzione fiscale italiana</h2>
+          <p>In Italia paghi il 26% solo sulla plusvalenza, non sull'intero prelievo.</p>
+        </div>
+      </div>
+      <div class="card">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Quando vendi ETF paghi il <strong style="color:var(--text)">26% di imposta sostitutiva</strong> solo sulla plusvalenza. Per BTP e titoli di Stato europei l'aliquota è agevolata al <strong style="color:var(--text)">12,5%</strong>. Questo significa che il tuo FIRE number reale (lordo) è più alto di quello nominale.</p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Quota plusvalenze sul portafoglio (%)</label>
+            <div class="slider-group">
+              <div class="slider-row">
+                <input type="range" id="fiscPlusvalore" min="10" max="95" step="1" value="55" oninput="document.getElementById('fiscPlusVal').textContent=this.value+'%';calcFiscale()">
+                <span class="slider-val" id="fiscPlusVal">55%</span>
+              </div>
+              <div class="form-hint">40–50% se accumuli da &lt;10 anni · 55–65% da 15–25 anni · &gt;65% da oltre 25 anni</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Asset soggetti al 26% (%)</label>
+            <div class="slider-group">
+              <div class="slider-row">
+                <input type="range" id="fiscAsset26" min="0" max="100" step="1" value="80" oninput="updateAsset12();calcFiscale()">
+                <span class="slider-val" id="fiscAsset26Val">80%</span>
+              </div>
+              <div class="form-hint">ETF azionari, ETF obbligazionari corporate → 26%</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Asset soggetti al 12,5% (%)</label>
+            <div class="slider-group">
+              <div class="slider-row">
+                <input type="range" id="fiscAsset12" min="0" max="100" step="1" value="20" disabled>
+                <span class="slider-val" id="fiscAsset12Val" style="color:var(--muted)">20%</span>
+              </div>
+              <div class="form-hint">BTP, titoli di Stato europei — calcolato automaticamente</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-row" style="margin-top:16px;">
+          <div class="result-box">
+            <div class="rb-label">Aliquota effettiva stimata</div>
+            <div class="rb-val" id="fiscAliquota">—</div>
+            <div class="rb-sub">Sul totale di ogni prelievo</div>
+          </div>
+          <div class="result-box highlight">
+            <div class="rb-label">FIRE Number lordo (IT)</div>
+            <div class="rb-val" id="fiscFireLordo">—</div>
+            <div class="rb-sub" id="fiscFireLordoSub">Maggiorazione: —</div>
+          </div>
+        </div>
+
+        <div class="table-responsive" style="margin-top:20px;">
+          <table class="fiscal-table">
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th>FIRE Number netto</th>
+                <th>FIRE Number lordo (IT)</th>
+              </tr>
+            </thead>
+            <tbody id="fiscTableBody">
+              <tr><td>SWR 3% — × 400</td><td id="ft-n400">—</td><td class="accent" id="ft-l400">—</td></tr>
+              <tr><td>SWR 4% — × 300</td><td id="ft-n300">—</td><td class="accent" id="ft-l300">—</td></tr>
+              <tr><td>SWR 5% — × 240</td><td id="ft-n240">—</td><td class="accent" id="ft-l240">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-box">
+          <strong>⚠ Semplificazione:</strong> il calcolo assume che la quota plusvalenze rimanga costante nel tempo. Nella realtà diminuisce progressivamente man mano che si preleva il capitale. La stima è conservativa. Non costituisce consulenza fiscale.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 5. EVOLUZIONE PATRIMONIO ===== -->
+    <section id="evoluzione">
+      <div class="section-header">
+        <div class="section-icon">📈</div>
+        <div class="section-title">
+          <h2>Evoluzione del patrimonio</h2>
+          <p>Proiezione della crescita del portafoglio nel tempo verso il tuo FIRE number.</p>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <div id="evChartWrap">
+          <div class="chart-placeholder" id="evPlaceholder">
+            <div class="icon">📈</div>
+            <div>Compila la sezione "Anni al FIRE" per visualizzare il grafico</div>
+          </div>
+          <canvas id="evChart" style="display:none;"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 6. MONTE CARLO ===== -->
+    <section id="montecarlo">
+      <div class="section-header">
+        <div class="section-icon">🎲</div>
+        <div class="section-title">
+          <h2>Simulazione Monte Carlo</h2>
+          <p>1.000 scenari casuali per valutare la probabilità che il tuo piano regga nel tempo.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Patrimonio al FIRE (€)</label>
+            <input type="number" class="form-input" id="mcPatrimonio" placeholder="es. 1.000.000">
+            <div class="form-hint">Si aggiorna automaticamente con la correzione fiscale</div>
+          </div>
+          <div class="form-group">
+            <label>Prelievo annuo (€)</label>
+            <input type="number" class="form-input" id="mcPrelievo" placeholder="es. 40.000">
+            <div class="form-hint">= spese mensili × 12</div>
+          </div>
+          <div class="form-group">
+            <label>Rendimento medio annuo (%)</label>
+            <div class="slider-group">
+              <div class="slider-row">
+                <input type="range" id="mcRend" min="2" max="12" step="0.5" value="7" oninput="document.getElementById('mcRendVal').textContent=this.value+'%'">
+                <span class="slider-val" id="mcRendVal">7%</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Volatilità / Dev. std. annua (%)</label>
+            <div class="slider-group">
+              <div class="slider-row">
+                <input type="range" id="mcVol" min="5" max="30" step="1" value="15" oninput="document.getElementById('mcVolVal').textContent=this.value+'%'">
+                <span class="slider-val" id="mcVolVal">15%</span>
+              </div>
+              <div class="form-hint">15% = portafoglio bilanciato tipico</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Durata simulazione</label>
+            <select class="form-input" id="mcDurata">
+              <option value="30">30 anni</option>
+              <option value="40" selected>40 anni</option>
+              <option value="50">50 anni</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" onclick="runMonteCarlo()">▶ Esegui simulazione</button>
+
+        <div id="mcResults" style="display:none;">
+          <div class="mc-stats" style="margin-top:20px;">
+            <div class="mc-stat">
+              <div class="ms-val" id="mcSuccessRate" style="color:var(--green)">—</div>
+              <div class="ms-label">Probabilità successo</div>
+            </div>
+            <div class="mc-stat">
+              <div class="ms-val" id="mcSuccess">—</div>
+              <div class="ms-label">Simulazioni riuscite</div>
+            </div>
+            <div class="mc-stat">
+              <div class="ms-val" id="mcFail" style="color:var(--red)">—</div>
+              <div class="ms-label">Simulazioni fallite</div>
+            </div>
+            <div class="mc-stat">
+              <div class="ms-val" id="mcMedFail">—</div>
+              <div class="ms-label">Anno medio fallimento</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="margin-top:16px;">
+            <canvas id="mcChart" style="max-height:320px;"></canvas>
+          </div>
+        </div>
+
+        <div class="info-box" style="margin-top:14px;">
+          <strong>Come funziona:</strong> la simulazione genera 1.000 possibili sequenze di rendimenti annuali usando la distribuzione normale (metodo Box-Muller) con la media e la deviazione standard indicate. Ogni anno il portafoglio cresce del rendimento casuale e decresce del prelievo annuale. Il grafico mostra la distribuzione degli esiti possibili, non una previsione. Fonte metodologica: Trinity Study (1998), Bengen (1994), Morningstar Retirement Research.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 7. ESPORTA SNAPSHOT ===== -->
+    <section id="esporta">
+      <div class="section-header">
+        <div class="section-icon">💾</div>
+        <div class="section-title">
+          <h2>Salva snapshot</h2>
+          <p>Esporta la situazione attuale in un file JSON. Riaprilo in qualsiasi momento per ripristinare tutto o per confrontarlo con lo storico.</p>
+        </div>
+      </div>
+      <div class="export-grid">
+        <div class="export-card">
+          <h3>💾 Salva configurazione</h3>
+          <p>Esporta spese, parametri, moltiplicatore SWR e tutti i campi compilati in un file <code>.json</code> da conservare.</p>
+          <input type="text" class="snapshot-label" id="snapshotLabel" placeholder="Nome snapshot (es. Aprile 2025)" />
+          <button class="btn" style="margin-top:0" onclick="esportaSnapshot()">⬇ Scarica snapshot JSON</button>
+        </div>
+        <div class="export-card">
+          <h3>📂 Carica configurazione</h3>
+          <p>Ricarica un file <code>.json</code> salvato in precedenza per ripristinare esattamente la situazione di quel momento.</p>
+          <div class="storico-upload-zone" id="ripristinaZone" style="padding:20px;">
+            <input type="file" accept=".json" onchange="ripristinaSnapshot(event)">
+            <div class="uz-icon">📂</div>
+            <div class="uz-title">Clicca o trascina il file</div>
+            <div class="uz-sub">Accetta solo file .json salvati da questo calcolatore</div>
+          </div>
+          <div id="ripristinaMsg" style="display:none;" class="info-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 8. STORICO PROGRESSIONE ===== -->
+    <section id="storico">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div class="section-title">
+          <h2>Storico & progressione</h2>
+          <p>Carica più snapshot salvati nel tempo per vedere se il tuo patrimonio sta crescendo in linea con il piano FIRE.</p>
+        </div>
+      </div>
+
+      <div class="storico-upload-zone" id="storicoZone">
+        <input type="file" accept=".json" multiple onchange="aggiungiStorico(event)" id="storicoInput">
+        <div class="uz-icon">📁</div>
+        <div class="uz-title">Carica uno o più snapshot</div>
+        <div class="uz-sub">Trascina o clicca · Puoi caricare più file contemporaneamente · Ogni file è uno snapshot salvato</div>
+      </div>
+
+      <div id="storicoListWrap" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Snapshot caricati</div>
+          <button class="btn-outline" style="width:auto;padding:5px 12px;font-size:12px;" onclick="clearStorico()">✕ Svuota tutto</button>
+        </div>
+        <div class="storico-list" id="storicoList"></div>
+
+        <!-- Statistiche aggregate -->
+        <div class="progressione-stats" id="progStats"></div>
+
+        <!-- Grafico progressione -->
+        <div class="chart-wrap">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--muted);">PROGRESSIONE PATRIMONIO NEL TEMPO</div>
+          <canvas id="storicoChart" style="max-height:320px;"></canvas>
+        </div>
+
+        <!-- Tabella dettaglio -->
+        <div class="table-responsive" style="margin-top:16px;">
+          <table class="fiscal-table" id="storicoTable">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Label</th>
+                <th>Patrimonio</th>
+                <th>FIRE Target</th>
+                <th>% FIRE</th>
+                <th>Δ da precedente</th>
+                <th>In linea col piano</th>
+              </tr>
+            </thead>
+            <tbody id="storicoTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="info-box" style="margin-top:14px;">
+          <strong>Come si usa:</strong> salva uno snapshot ogni mese o trimestre dalla sezione "Salva snapshot". Carica tutti i file accumulati qui per visualizzare la tua curva di crescita reale sovrapposta al piano teorico calcolato dai tuoi parametri attuali.
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <p>Strumento educativo · Non costituisce consulenza finanziaria · I calcoli sono approssimazioni basate su ipotesi semplificative</p>
+  </div>
+</footer>
+
+<script>
+// ===========================
+// STATE
+// ===========================
+let currentMult = 300;
+let currentSWR = 4;
+let spese = [
+  { nome: 'Affitto / Mutuo', valore: 800, inizioMese: '', fineMese: '' },
+  { nome: 'Alimentari', valore: 400, inizioMese: '', fineMese: '' },
+  { nome: 'Trasporti', valore: 150, inizioMese: '', fineMese: '' },
+  { nome: 'Svago & uscite', valore: 200, inizioMese: '', fineMese: '' },
+];
+
+// Asset colors palette
+const ASSET_COLORS = ['#f5a623','#3dd68c','#60a5fa','#f472b6','#a78bfa','#fb923c','#34d399','#facc15','#38bdf8','#f87171'];
+
+let assets = [
+  { nome: 'ETF Azionario', valore: 50000, contributo: 800, rendimento: 7 },
+  { nome: 'Fondo pensione', valore: 15000, contributo: 300, rendimento: 4 },
+];
+
+let pieChart = null;
+let evChart = null;
+let mcChart = null;
+
+// ===========================
+// UTILITIES
+// ===========================
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1e6) return '€ ' + (n / 1e6).toFixed(2).replace('.', ',') + 'M';
+  return '€ ' + Math.round(n).toLocaleString('it-IT');
+}
+function fmtShort(n) {
+  if (!n && n !== 0) return '—';
+  return '€ ' + Math.round(n).toLocaleString('it-IT');
+}
+
+// ===========================
+// SWR
+// ===========================
+function setSWR(btn, mult, swr) {
+  document.querySelectorAll('.swr-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMult = mult;
+  currentSWR = swr;
+  updateAll();
+}
+
+// ===========================
+// SPESE
+// ===========================
+function isScaduta(fineMese) {
+  if (!fineMese) return false;
+  const oggi = new Date();
+  const [y, m] = fineMese.split('-').map(Number);
+  return new Date(y, m - 1, 1) < new Date(oggi.getFullYear(), oggi.getMonth(), 1);
+}
+
+function isFutura(inizioMese) {
+  if (!inizioMese) return false;
+  const oggi = new Date();
+  const [y, m] = inizioMese.split('-').map(Number);
+  return new Date(y, m - 1, 1) > new Date(oggi.getFullYear(), oggi.getMonth(), 1);
+}
+
+function mesiRimanenti(fineMese) {
+  if (!fineMese) return null;
+  const oggi = new Date();
+  const [y, m] = fineMese.split('-').map(Number);
+  const diff = (y - oggi.getFullYear()) * 12 + (m - 1 - oggi.getMonth());
+  return Math.max(0, diff);
+}
+
+function mesiAllInizio(inizioMese) {
+  if (!inizioMese) return null;
+  const oggi = new Date();
+  const [y, m] = inizioMese.split('-').map(Number);
+  const diff = (y - oggi.getFullYear()) * 12 + (m - 1 - oggi.getMonth());
+  return Math.max(0, diff);
+}
+
+function renderSpese() {
+  const tbody = document.getElementById('speseBody');
+  tbody.innerHTML = '';
+  spese.forEach((s, i) => {
+    const scaduta  = isScaduta(s.fineMese);
+    const futura   = isFutura(s.inizioMese);
+    const hasFine  = !!s.fineMese;
+    const hasInizio = !!s.inizioMese;
+
+    // Badge sul nome
+    let nomeBadge = '';
+    if (scaduta)      nomeBadge = `<span class="spesa-scaduta-badge">già saldata</span>`;
+    else if (futura)  nomeBadge = `<span class="spesa-futura-badge">futura</span>`;
+    else if (hasFine) nomeBadge = `<span class="spesa-temp-badge">temporanea</span>`;
+
+    // Colonna Target FIRE
+    let targetHtml;
+    if (scaduta) {
+      targetHtml = `<span style="color:var(--green);font-weight:700">✅ già finita</span>`;
+    } else if (futura) {
+      const mesi = mesiAllInizio(s.inizioMese);
+      targetHtml = `<span style="color:#a78bfa;font-size:12px">nel FIRE, non ora<br><span style="color:var(--muted)">inizia tra ${mesi} mesi</span></span>`;
+    } else if (hasFine) {
+      const mesi = mesiRimanenti(s.fineMese);
+      targetHtml = `<span style="color:var(--blue);font-size:12px">esclusa dal FIRE<br><span style="color:var(--muted)">${mesi} mesi rimasti</span></span>`;
+    } else {
+      targetHtml = `<span style="font-weight:700;color:var(--accent)">${fmtShort(s.valore * currentMult)}</span>`;
+    }
+
+    // Opacità riga
+    const opacity = (scaduta || futura) ? '0.55' : '1';
+
+    // Hint date
+    const inizioHint = hasInizio
+      ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">da: ${s.inizioMese}</div>`
+      : `<div style="font-size:10px;color:var(--muted);margin-top:2px;">attiva ora</div>`;
+    const fineHint = hasFine
+      ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">fino: ${s.fineMese}</div>`
+      : `<div style="font-size:10px;color:var(--muted);margin-top:2px;">permanente</div>`;
+
+    const tr = document.createElement('tr');
+    tr.style.opacity = opacity;
+    tr.innerHTML = `
+      <td>
+        <input class="spese-input" type="text" value="${s.nome}" placeholder="Es. Assicurazione"
+          oninput="spese[${i}].nome=this.value;updateCharts()"
+          style="max-width:165px">
+        ${nomeBadge}
+      </td>
+      <td><input class="spese-input" type="number" value="${s.valore}" placeholder="0"
+        style="max-width:95px" oninput="spese[${i}].valore=parseFloat(this.value)||0;updateAll()"></td>
+      <td>
+        <input class="spese-date" type="month" value="${s.inizioMese || ''}"
+          title="Lascia vuoto se la spesa è già attiva oggi"
+          onchange="spese[${i}].inizioMese=this.value;updateAll()">
+        ${inizioHint}
+      </td>
+      <td>
+        <input class="spese-date" type="month" value="${s.fineMese || ''}"
+          title="Lascia vuoto se è una spesa permanente"
+          onchange="spese[${i}].fineMese=this.value;updateAll()">
+        ${fineHint}
+      </td>
+      <td>${targetHtml}</td>
+      <td><button class="del-btn" onclick="delSpesa(${i})" title="Elimina">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function addSpesa() {
+  spese.push({ nome: '', valore: 0, inizioMese: '', fineMese: '' });
+  renderSpese();
+}
+
+function delSpesa(i) {
+  spese.splice(i, 1);
+  renderSpese();
+  updateAll();
+}
+
+// Totale attivo ora (per grafico torta): esclude scadute e future
+function getTotale() {
+  return spese
+    .filter(s => !isScaduta(s.fineMese) && !isFutura(s.inizioMese))
+    .reduce((acc, s) => acc + (parseFloat(s.valore) || 0), 0);
+}
+
+// Totale FIRE permanente: spese che ci saranno al FIRE
+// = senza data fine (o con fine futura) E non già scadute
+// Include le voci future (saranno attive al FIRE), esclude le temporanee con fine e le già scadute
+function getTotalePermanente() {
+  return spese
+    .filter(s => {
+      if (isScaduta(s.fineMese)) return false; // finita, non serve
+      if (s.fineMese) return false;            // temporanea con scadenza, non rientra nel FIRE
+      return true;                             // permanente o futura senza fine
+    })
+    .reduce((acc, s) => acc + (parseFloat(s.valore) || 0), 0);
+}
+
+// ===========================
+// FIRE NUMBER
+// ===========================
+function updateFireNumber() {
+  const tot = getTotale();           // tutte le spese attive (per grafico torta e Monte Carlo)
+  const perm = getTotalePermanente(); // solo spese permanenti (per FIRE number)
+
+  const fireNums = { 240: perm * 240, 300: perm * 300, 333: perm * 333, 360: perm * 360, 400: perm * 400 };
+  const main = perm * currentMult;
+  const swrPct = currentSWR;
+
+  const hasTemp   = spese.some(s => s.fineMese && !isScaduta(s.fineMese) && !isFutura(s.inizioMese));
+  const hasFuture = spese.some(s => isFutura(s.inizioMese));
+  const tempTot   = spese.filter(s => s.fineMese && !isScaduta(s.fineMese) && !isFutura(s.inizioMese))
+                         .reduce((a,s) => a + (parseFloat(s.valore)||0), 0);
+  const futureTot = spese.filter(s => isFutura(s.inizioMese) && !s.fineMese)
+                         .reduce((a,s) => a + (parseFloat(s.valore)||0), 0);
+
+  let subParts = [`Spese permanenti ${fmtShort(perm)}/mese · SWR ${swrPct}%`];
+  if (hasTemp)   subParts.push(`escluse temporanee ${fmtShort(tempTot)}/mese`);
+  if (hasFuture) subParts.push(`incluse future ${fmtShort(futureTot)}/mese`);
+
+  document.getElementById('mainFireNum').textContent = perm > 0 ? fmt(main) : '—';
+  document.getElementById('mainFireSub').textContent = perm > 0
+    ? subParts.join(' · ')
+    : 'Inserisci le tue spese mensili ↑';
+
+  document.getElementById('fn240').textContent = fmt(fireNums[240]);
+  document.getElementById('fn300').textContent = fmt(fireNums[300]);
+  document.getElementById('fn400').textContent = fmt(fireNums[400]);
+
+  // Evidenzia card attiva
+  ['240','300','400'].forEach(m => {
+    document.getElementById('fc'+m).classList.remove('active-swr');
+  });
+  const nearestCard = ['240','300','400'].reduce((prev, curr) => {
+    return Math.abs(parseInt(curr) - currentMult) < Math.abs(parseInt(prev) - currentMult) ? curr : prev;
+  });
+  if (['240','300','400'].includes(String(nearestCard))) {
+    document.getElementById('fc'+nearestCard).classList.add('active-swr');
+  }
+
+  // Aggiorna i campi dipendenti con valori permanenti
+  if (perm > 0) {
+    document.getElementById('coastFireTarget').value = Math.round(main);
+    document.getElementById('anniFireTarget').value = Math.round(main);
+    document.getElementById('mcPrelievo').value = Math.round(perm * 12);
+  }
+
+  return { tot, perm, main, fireNums };
+}
+
+// ===========================
+// PIE CHART
+// ===========================
+function updatePieChart() {
+  const filtered = spese.filter(s => s.valore > 0);
+  if (filtered.length === 0) {
+    document.getElementById('piePlaceholder').style.display = 'flex';
+    document.getElementById('pieChart').style.display = 'none';
+    if (pieChart) { pieChart.destroy(); pieChart = null; }
+    return;
+  }
+  document.getElementById('piePlaceholder').style.display = 'none';
+  document.getElementById('pieChart').style.display = 'block';
+
+  const colors = ['#f5a623','#3dd68c','#60a5fa','#f56565','#a78bfa','#fb923c','#34d399','#f472b6','#facc15','#38bdf8'];
+  const data = filtered.map(s => s.valore);
+  const labels = filtered.map(s => s.nome || 'Voce');
+
+  if (pieChart) { pieChart.destroy(); }
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  pieChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: colors.slice(0, data.length), borderWidth: 2, borderColor: '#16181c' }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#8b8f99', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: €${ctx.raw.toLocaleString('it-IT')} (${((ctx.raw / getTotale()) * 100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+}
+
+// ===========================
+// COAST FIRE
+// ===========================
+function calcCoast() {
+  const target = parseFloat(document.getElementById('coastFireTarget').value);
+  const pat = parseFloat(document.getElementById('coastPatrimonio').value);
+  const etaAtt = parseFloat(document.getElementById('coastEtaAttuale').value);
+  const etaFire = parseFloat(document.getElementById('coastEtaFire').value);
+  const rend = parseFloat(document.getElementById('coastRend').value) / 100;
+
+  if (!target || !etaAtt || !etaFire || etaFire <= etaAtt) return;
+  const anni = etaFire - etaAtt;
+  const coastNum = target / Math.pow(1 + rend, anni);
+
+  document.getElementById('coastResults').style.display = 'grid';
+  document.getElementById('coastNum').textContent = fmt(coastNum);
+
+  if (pat) {
+    const diff = pat - coastNum;
+    const box = document.getElementById('coastStatusBox');
+    if (diff >= 0) {
+      document.getElementById('coastDiff').textContent = fmt(diff);
+      document.getElementById('coastDiff').style.color = 'var(--green)';
+      document.getElementById('coastDiffSub').textContent = '✅ Hai già raggiunto il Coast FIRE!';
+      box.className = 'result-box highlight';
+    } else {
+      document.getElementById('coastDiff').textContent = fmt(Math.abs(diff));
+      document.getElementById('coastDiff').style.color = 'var(--accent)';
+      document.getElementById('coastDiffSub').textContent = `Mancano ancora ${fmt(Math.abs(diff))} al Coast FIRE`;
+      box.className = 'result-box';
+    }
+  }
+}
+
+// ===========================
+// ASSET TABLE
+// ===========================
+function renderAssets() {
+  const tbody = document.getElementById('assetBody');
+  tbody.innerHTML = '';
+  assets.forEach((a, i) => {
+    const color = ASSET_COLORS[i % ASSET_COLORS.length];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <span class="asset-color-dot" style="background:${color}"></span>
+        <input class="spese-input" type="text" value="${a.nome}" placeholder="Es. ETF"
+          oninput="assets[${i}].nome=this.value;calcAnni()" style="max-width:150px">
+      </td>
+      <td><input class="spese-input" type="number" value="${a.valore}" placeholder="0"
+        style="max-width:110px" oninput="assets[${i}].valore=parseFloat(this.value)||0;calcAnni()"></td>
+      <td><input class="spese-input" type="number" value="${a.contributo}" placeholder="0"
+        style="max-width:100px" oninput="assets[${i}].contributo=parseFloat(this.value)||0;calcAnni()"></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="asset-rend-input" type="number" value="${a.rendimento}" min="0" max="20" step="0.5"
+            oninput="assets[${i}].rendimento=parseFloat(this.value)||0;calcAnni()">
+          <span style="color:var(--muted);font-size:13px;">%</span>
+        </div>
+      </td>
+      <td><button class="del-btn" onclick="delAsset(${i})" title="Elimina">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function addAsset() {
+  assets.push({ nome: '', valore: 0, contributo: 0, rendimento: 7 });
+  renderAssets();
+}
+
+function delAsset(i) {
+  assets.splice(i, 1);
+  renderAssets();
+  calcAnni();
+}
+
+// ===========================
+// PENSIONE
+// ===========================
+function calcPensione() {
+  const attiva = document.getElementById('pensAttivaCheck').checked;
+  if (!attiva) { document.getElementById('pensResult').style.display = 'none'; return null; }
+
+  const importoOggi = parseFloat(document.getElementById('pensImporto').value) || 0;
+  const annoPens   = parseInt(document.getElementById('pensAnno').value) || 2052;
+  const infl       = parseFloat(document.getElementById('pensInflazione').value) / 100;
+  const rendPens   = parseFloat(document.getElementById('pensRendimento').value) / 100;
+  const annoStart  = parseInt(document.getElementById('anniAnnoStart').value) || new Date().getFullYear();
+
+  document.getElementById('pensAnnoLabel').textContent = annoPens;
+
+  const anni = annoPens - annoStart;
+  // Importo attualizzato: rivaluta i €1500 odierni con l'inflazione fino al 2052
+  const rentaFutura = importoOggi * Math.pow(1 + infl, anni);
+  // Capitale equivalente: quanto capitale serve per generare quella rendita con lo SWR scelto
+  const capitaleEquiv = (rentaFutura * 12) / rendPens;
+
+  document.getElementById('pensResult').style.display = 'block';
+  document.getElementById('pensRentaFutura').textContent = fmtShort(rentaFutura) + '/mese';
+  document.getElementById('pensCapitale').textContent = fmt(capitaleEquiv);
+
+  return { rentaFutura, capitaleEquiv, annoPens, anni };
+}
+
+// ===========================
+// ANNI AL FIRE (multi-asset)
+// ===========================
+function calcAnni() {
+  renderAssets();
+  const pensione = calcPensione();
+
+  const targetBruto = parseFloat(document.getElementById('anniFireTarget').value) || 0;
+  const pensOffset  = pensione ? pensione.capitaleEquiv : 0;
+  const target      = Math.max(0, targetBruto - pensOffset);
+
+  if (assets.length === 0 || target <= 0) {
+    document.getElementById('anniResults').style.display = 'none';
+    document.getElementById('evPlaceholder').style.display = 'flex';
+    document.getElementById('evChart').style.display = 'none';
+    return;
+  }
+
+  // Simula mese per mese con asset multipli
+  let ports = assets.map(a => a.valore);
+  const rendMensili = assets.map(a => Math.pow(1 + a.rendimento / 100, 1/12) - 1);
+  let mesi = 0;
+  const MAX = 720; // 60 anni
+
+  while (mesi < MAX) {
+    let totale = ports.reduce((s, v) => s + v, 0);
+    if (totale >= target) break;
+    ports = ports.map((p, i) => p * (1 + rendMensili[i]) + (assets[i].contributo || 0));
+    mesi++;
+  }
+
+  const patTot = ports.reduce((s, v) => s + v, 0);
+  const contribTot = assets.reduce((s, a) => s + (a.contributo || 0), 0);
+  const annoStart = parseInt(document.getElementById('anniAnnoStart').value) || new Date().getFullYear();
+
+  document.getElementById('anniResults').style.display = 'grid';
+
+  if (mesi >= MAX) {
+    document.getElementById('anniNum').textContent = '> 60 anni';
+    document.getElementById('anniSub').textContent = 'Aumenta i contributi mensili';
+  } else {
+    const anni = Math.floor(mesi / 12);
+    const mesiRim = mesi % 12;
+    const fireYear = annoStart + anni;
+    document.getElementById('anniNum').textContent = `${anni} anni${mesiRim > 0 ? ' e ' + mesiRim + ' mesi' : ''}`;
+    document.getElementById('anniSub').textContent = `Anno FIRE stimato: ${fireYear}${pensOffset > 0 ? ` · pensione: −${fmt(pensOffset)}` : ''}`;
+  }
+
+  document.getElementById('anniPatTot').textContent = fmt(patTot);
+  document.getElementById('anniContribTot').textContent = fmtShort(contribTot) + '/mese';
+
+  // Tasso di risparmio
+  const totSpese = getTotale();
+  if (totSpese > 0 && contribTot > 0) {
+    const tasso = (contribTot / (totSpese + contribTot) * 100).toFixed(0);
+    document.getElementById('savingsRate').textContent = tasso + '%';
+  }
+
+  // Aggiorna campo patrimonio per Coast e MC (somma totale asset attuali)
+  const patAttuale = assets.reduce((s, a) => s + a.valore, 0);
+  document.getElementById('coastPatrimonio').value = patAttuale;
+  document.getElementById('mcPatrimonio').value = patAttuale; // sarà sovrascritto da fiscale se attiva
+
+  updateEvChart(assets, rendMensili, target, targetBruto, mesi, pensione, annoStart);
+}
+
+// ===========================
+// EVOLUZIONE CHART (multi-asset)
+// ===========================
+function updateEvChart(assetList, rendMensili, targetEffettivo, targetBruto, mesiTotali, pensione, annoStart) {
+  if (!mesiTotali || mesiTotali >= 720) {
+    document.getElementById('evPlaceholder').style.display = 'flex';
+    document.getElementById('evChart').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('evPlaceholder').style.display = 'none';
+  document.getElementById('evChart').style.display = 'block';
+
+  const step = Math.max(1, Math.floor(mesiTotali / 72));
+  const labels = [];
+  const assetSeries = assetList.map(() => []);
+  const totSeries = [];
+  const contSeries = [];
+  const targetSeries = [];
+  const pensioneSeries = [];
+
+  let ports = assetList.map(a => a.valore);
+  let contTot = assetList.reduce((s,a) => s + a.valore, 0);
+  const pensioneAnno = pensione ? pensione.annoPens : null;
+
+  for (let m = 0; m <= mesiTotali; m++) {
+    if (m % step === 0 || m === mesiTotali) {
+      const annoCorrente = annoStart + m / 12;
+      labels.push(Math.round(annoStart + m / 12).toString());
+      const tot = ports.reduce((s, v) => s + v, 0);
+      totSeries.push(Math.round(tot));
+      contSeries.push(Math.round(contTot));
+      targetSeries.push(Math.round(targetBruto));
+      assetList.forEach((_, i) => assetSeries[i].push(Math.round(ports[i])));
+
+      // Pensione: mostra il capitale equivalente come offset dal momento dell'anno pensione
+      if (pensione) {
+        const offset = annoCorrente >= pensioneAnno ? Math.round(pensione.capitaleEquiv) : 0;
+        pensioneSeries.push(offset);
+      }
+    }
+    ports = ports.map((p, i) => p * (1 + rendMensili[i]) + (assetList[i].contributo || 0));
+    contTot += assetList.reduce((s,a) => s + (a.contributo||0), 0);
+  }
+
+  const datasets = [];
+
+  // Stack per ogni asset
+  assetList.forEach((a, i) => {
+    const color = ASSET_COLORS[i % ASSET_COLORS.length];
+    datasets.push({
+      label: a.nome || `Asset ${i+1}`,
+      data: assetSeries[i],
+      borderColor: color,
+      backgroundColor: color + '22',
+      fill: i === 0 ? 'origin' : '-1',
+      tension: 0.3,
+      pointRadius: 0,
+      borderWidth: 1.5,
+      stack: 'assets',
+    });
+  });
+
+  // Linea totale
+  datasets.push({
+    label: 'Totale portafoglio',
+    data: totSeries,
+    borderColor: '#f5a623',
+    backgroundColor: 'transparent',
+    tension: 0.3,
+    pointRadius: 0,
+    borderWidth: 2.5,
+    borderDash: [],
+    stack: undefined,
+  });
+
+  // Contributi versati
+  datasets.push({
+    label: 'Contributi versati',
+    data: contSeries,
+    borderColor: '#8b8f99',
+    backgroundColor: 'transparent',
+    borderDash: [4,3],
+    tension: 0.3,
+    pointRadius: 0,
+    borderWidth: 1.5,
+    stack: undefined,
+  });
+
+  // FIRE target
+  datasets.push({
+    label: 'FIRE Target',
+    data: targetSeries,
+    borderColor: '#60a5fa',
+    backgroundColor: 'transparent',
+    borderDash: [8,4],
+    tension: 0,
+    pointRadius: 0,
+    borderWidth: 1.5,
+    stack: undefined,
+  });
+
+  // Pensione offset
+  if (pensione && pensioneSeries.length > 0) {
+    datasets.push({
+      label: `Offset pensione (da ${pensioneAnno})`,
+      data: pensioneSeries,
+      borderColor: '#a78bfa',
+      backgroundColor: 'rgba(167,139,250,.08)',
+      borderDash: [5,3],
+      tension: 0,
+      pointRadius: 0,
+      borderWidth: 1.5,
+      fill: false,
+      stack: undefined,
+    });
+  }
+
+  if (evChart) evChart.destroy();
+  const ctx = document.getElementById('evChart').getContext('2d');
+  evChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#8b8f99', font: { size: 11 }, boxWidth: 14 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.raw === null || ctx.raw === undefined) return null;
+              return ctx.dataset.label + ': ' + fmt(ctx.raw);
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#8b8f99', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: {
+          ticks: {
+            color: '#8b8f99',
+            callback: v => v >= 1e6 ? '€'+(v/1e6).toFixed(1)+'M' : '€'+(v/1000).toFixed(0)+'k'
+          },
+          grid: { color: 'rgba(255,255,255,.04)' }
+        }
+      }
+    }
+  });
+}
+
+// ===========================
+// FISCALITÀ
+// ===========================
+function updateAsset12() {
+  const v26 = parseInt(document.getElementById('fiscAsset26').value);
+  const v12 = 100 - v26;
+  document.getElementById('fiscAsset12').value = v12;
+  document.getElementById('fiscAsset26Val').textContent = v26 + '%';
+  document.getElementById('fiscAsset12Val').textContent = v12 + '%';
+}
+
+function calcFiscale() {
+  const plusvPerc = parseFloat(document.getElementById('fiscPlusvalore').value) / 100;
+  const asset26 = parseFloat(document.getElementById('fiscAsset26').value) / 100;
+  const asset12 = 1 - asset26;
+
+  // Aliquota effettiva = % plusvalenza * (asset26*0.26 + asset12*0.125)
+  const aliqEffettiva = plusvPerc * (asset26 * 0.26 + asset12 * 0.125);
+  document.getElementById('fiscAliquota').textContent = (aliqEffettiva * 100).toFixed(1) + '%';
+
+  const { main, fireNums, perm } = updateFireNumber();
+
+  function lordo(netto) {
+    return netto / (1 - aliqEffettiva);
+  }
+
+  const lordo300 = lordo(main);
+  const maggiorazione = lordo300 - main;
+
+  document.getElementById('fiscFireLordo').textContent = fmt(lordo300);
+  document.getElementById('fiscFireLordoSub').textContent = `Maggiorazione: ${fmt(maggiorazione)}`;
+
+  document.getElementById('ft-n400').textContent = fmt(fireNums[400]);
+  document.getElementById('ft-l400').textContent = fmt(lordo(fireNums[400]));
+  document.getElementById('ft-n300').textContent = fmt(fireNums[300]);
+  document.getElementById('ft-l300').textContent = fmt(lordo(fireNums[300]));
+  document.getElementById('ft-n240').textContent = fmt(fireNums[240]);
+  document.getElementById('ft-l240').textContent = fmt(lordo(fireNums[240]));
+
+  // Auto-aggiorna Monte Carlo con FIRE lordo
+  document.getElementById('mcPatrimonio').value = Math.round(lordo300);
+}
+
+// ===========================
+// MONTE CARLO
+// ===========================
+function boxMuller() {
+  let u, v;
+  do { u = Math.random(); } while (u === 0);
+  do { v = Math.random(); } while (v === 0);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function runMonteCarlo() {
+  const patrimonio = parseFloat(document.getElementById('mcPatrimonio').value);
+  const prelievo = parseFloat(document.getElementById('mcPrelievo').value);
+  const rend = parseFloat(document.getElementById('mcRend').value) / 100;
+  const vol = parseFloat(document.getElementById('mcVol').value) / 100;
+  const durata = parseInt(document.getElementById('mcDurata').value);
+
+  if (!patrimonio || !prelievo) {
+    alert('Inserisci patrimonio al FIRE e prelievo annuo.');
+    return;
+  }
+
+  const N = 1000;
+  const paths = [];
+  let successi = 0;
+  let failAnni = [];
+
+  for (let i = 0; i < N; i++) {
+    let port = patrimonio;
+    let failed = false;
+    let failAnno = null;
+    const path = [port];
+    for (let y = 0; y < durata; y++) {
+      const r = rend + vol * boxMuller();
+      port = port * (1 + r) - prelievo;
+      if (port <= 0 && !failed) { failed = true; failAnno = y + 1; port = 0; }
+      path.push(Math.max(port, 0));
+    }
+    if (!failed) successi++;
+    else failAnni.push(failAnno);
+    paths.push(path);
+  }
+
+  const failureRate = N - successi;
+  const succRate = ((successi / N) * 100).toFixed(1);
+  const medFail = failAnni.length > 0 ? (failAnni.reduce((a,b) => a+b, 0) / failAnni.length).toFixed(1) : '—';
+
+  document.getElementById('mcResults').style.display = 'block';
+  document.getElementById('mcSuccessRate').textContent = succRate + '%';
+  document.getElementById('mcSuccess').textContent = successi;
+  document.getElementById('mcFail').textContent = failureRate;
+  document.getElementById('mcMedFail').textContent = failAnni.length > 0 ? medFail + ' anni' : '—';
+
+  // Colora success rate
+  const srEl = document.getElementById('mcSuccessRate');
+  if (parseFloat(succRate) >= 90) srEl.style.color = 'var(--green)';
+  else if (parseFloat(succRate) >= 75) srEl.style.color = 'var(--accent)';
+  else srEl.style.color = 'var(--red)';
+
+  // Calcola percentili
+  const labels = Array.from({ length: durata + 1 }, (_, i) => 'Anno ' + i);
+  const pcts = [10, 25, 50, 75, 90];
+  const percentiles = {};
+  pcts.forEach(p => percentiles[p] = []);
+
+  for (let y = 0; y <= durata; y++) {
+    const vals = paths.map(p => p[y]).sort((a, b) => a - b);
+    pcts.forEach(p => {
+      const idx = Math.floor((p / 100) * vals.length);
+      percentiles[p].push(vals[idx]);
+    });
+  }
+
+  if (mcChart) mcChart.destroy();
+  const ctx = document.getElementById('mcChart').getContext('2d');
+  mcChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'P90 Ottimistico', data: percentiles[90], borderColor: '#3dd68c', backgroundColor: 'transparent', pointRadius: 0, borderWidth: 1.5, tension: 0.3 },
+        { label: 'P75', data: percentiles[75], borderColor: 'rgba(245,166,35,.7)', backgroundColor: 'rgba(245,166,35,.08)', fill: '+1', pointRadius: 0, borderWidth: 1.5, tension: 0.3 },
+        { label: 'P50 Mediano', data: percentiles[50], borderColor: '#f5a623', backgroundColor: 'transparent', pointRadius: 0, borderWidth: 2.5, tension: 0.3 },
+        { label: 'P25', data: percentiles[25], borderColor: 'rgba(245,166,35,.7)', backgroundColor: 'rgba(245,166,35,.08)', fill: '-1', pointRadius: 0, borderWidth: 1.5, tension: 0.3 },
+        { label: 'P10 Pessimistico', data: percentiles[10], borderColor: '#f56565', backgroundColor: 'transparent', pointRadius: 0, borderWidth: 1.5, tension: 0.3 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#8b8f99', font: { size: 12 } } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.raw) } }
+      },
+      scales: {
+        x: { ticks: { color: '#8b8f99', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: { ticks: { color: '#8b8f99', callback: v => v >= 1e6 ? '€'+(v/1e6).toFixed(1)+'M' : '€'+(v/1000).toFixed(0)+'k' }, grid: { color: 'rgba(255,255,255,.04)' } }
+      }
+    }
+  });
+}
+
+// ===========================
+// SNAPSHOT — EXPORT
+// ===========================
+function getFullState() {
+  return {
+    version: 1,
+    timestamp: new Date().toISOString(),
+    label: document.getElementById('snapshotLabel').value.trim() || new Date().toLocaleDateString('it-IT'),
+    swr: { mult: currentMult, pct: currentSWR },
+    spese,
+    inputs: {
+      coastFireTarget: document.getElementById('coastFireTarget').value,
+      coastPatrimonio: document.getElementById('coastPatrimonio').value,
+      coastEtaAttuale: document.getElementById('coastEtaAttuale').value,
+      coastEtaFire: document.getElementById('coastEtaFire').value,
+      coastRend: document.getElementById('coastRend').value,
+      anniFireTarget: document.getElementById('anniFireTarget').value,
+      anniAnnoStart: document.getElementById('anniAnnoStart').value,
+      pensAttivaCheck: document.getElementById('pensAttivaCheck').checked,
+      pensImporto: document.getElementById('pensImporto').value,
+      pensAnno: document.getElementById('pensAnno').value,
+      pensInflazione: document.getElementById('pensInflazione').value,
+      pensRendimento: document.getElementById('pensRendimento').value,
+      fiscPlusvalore: document.getElementById('fiscPlusvalore').value,
+      fiscAsset26: document.getElementById('fiscAsset26').value,
+      mcPatrimonio: document.getElementById('mcPatrimonio').value,
+      mcPrelievo: document.getElementById('mcPrelievo').value,
+      mcRend: document.getElementById('mcRend').value,
+      mcVol: document.getElementById('mcVol').value,
+      mcDurata: document.getElementById('mcDurata').value,
+    },
+    assets,
+    computed: {
+      totaleSpeseMensili: getTotale(),
+      totalePermanente: getTotalePermanente(),
+      totaleInvestito: assets.reduce((s, a) => s + (a.valore || 0), 0),
+      fireNumber: getTotalePermanente() * currentMult,
+      fireNumber300: getTotalePermanente() * 300,
+      fireNumber400: getTotalePermanente() * 400,
+    }
+  };
+}
+
+function esportaSnapshot() {
+  const state = getFullState();
+  const label = state.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  const datePart = new Date().toISOString().slice(0,10);
+  const filename = `fire_snapshot_${datePart}_${label}.json`;
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===========================
+// SNAPSHOT — IMPORT / RESTORE
+// ===========================
+function ripristinaSnapshot(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const state = JSON.parse(e.target.result);
+      if (!state.version || !state.spese) throw new Error('File non valido');
+
+      // Ripristina spese
+      spese = state.spese;
+
+      // Ripristina assets (se presenti)
+      if (state.assets) assets = state.assets;
+
+      // Ripristina SWR
+      currentMult = state.swr.mult;
+      currentSWR = state.swr.pct;
+      document.querySelectorAll('.swr-btn').forEach(b => {
+        b.classList.remove('active');
+        if (parseInt(b.dataset.mult) === currentMult) b.classList.add('active');
+      });
+
+      // Ripristina input (solo quelli che esistono nel DOM)
+      const inp = state.inputs;
+      Object.entries(inp).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = val;
+        else el.value = val;
+      });
+
+      // Aggiorna slider labels
+      if (inp.coastRend) document.getElementById('coastRendVal').textContent = inp.coastRend + '%';
+      if (inp.fiscPlusvalore) document.getElementById('fiscPlusVal').textContent = inp.fiscPlusvalore + '%';
+      if (inp.fiscAsset26) {
+        document.getElementById('fiscAsset26Val').textContent = inp.fiscAsset26 + '%';
+        document.getElementById('fiscAsset12Val').textContent = (100 - parseInt(inp.fiscAsset26)) + '%';
+      }
+      if (inp.mcRend) document.getElementById('mcRendVal').textContent = inp.mcRend + '%';
+      if (inp.mcVol)  document.getElementById('mcVolVal').textContent = inp.mcVol + '%';
+      if (inp.pensInflazione) document.getElementById('pensInflVal').textContent = inp.pensInflazione + '%';
+      if (inp.pensRendimento) document.getElementById('pensRendVal').textContent = inp.pensRendimento + '%';
+
+      updateAll();
+
+      const msg = document.getElementById('ripristinaMsg');
+      msg.style.display = 'block';
+      msg.innerHTML = `<strong>✅ Snapshot caricato:</strong> "${state.label}" · ${new Date(state.timestamp).toLocaleString('it-IT')}`;
+    } catch(err) {
+      const msg = document.getElementById('ripristinaMsg');
+      msg.style.display = 'block';
+      msg.innerHTML = `<strong style="color:var(--red)">❌ Errore:</strong> il file non è un snapshot valido di questo calcolatore.`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ===========================
+// STORICO
+// ===========================
+let storicoData = []; // array di snapshot objects
+let storicoChart = null;
+
+function aggiungiStorico(event) {
+  const files = Array.from(event.target.files);
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const state = JSON.parse(e.target.result);
+        if (!state.version || !state.timestamp || !state.computed) return;
+        // Evita duplicati (stesso timestamp)
+        if (storicoData.find(s => s.timestamp === state.timestamp)) return;
+        storicoData.push(state);
+        loaded++;
+        if (loaded === files.length || loaded === 1) {
+          // Ordina per data
+          storicoData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+          renderStorico();
+        }
+      } catch(e) { /* ignore invalid files */ }
+    };
+    reader.readAsText(file);
+  });
+  // Reset input so same files can be re-added after clearing
+  document.getElementById('storicoInput').value = '';
+}
+
+function clearStorico() {
+  storicoData = [];
+  if (storicoChart) { storicoChart.destroy(); storicoChart = null; }
+  document.getElementById('storicoListWrap').style.display = 'none';
+}
+
+function renderStorico() {
+  if (storicoData.length === 0) {
+    document.getElementById('storicoListWrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('storicoListWrap').style.display = 'block';
+
+  // --- Lista snapshot ---
+  const listEl = document.getElementById('storicoList');
+  listEl.innerHTML = '';
+
+  // Helper: recupera patrimonio da snapshot (nuovo formato usa computed.totaleInvestito, vecchio usava inputs.anniPatrimonio)
+  function getPatFromSnap(snap) {
+    if (snap.computed?.totaleInvestito != null) return snap.computed.totaleInvestito;
+    if (snap.assets) return snap.assets.reduce((s, a) => s + (a.valore || 0), 0);
+    if (snap.inputs?.anniPatrimonio) return parseFloat(snap.inputs.anniPatrimonio);
+    return null;
+  }
+
+  storicoData.forEach((snap, i) => {
+    const pat = getPatFromSnap(snap);
+    const fireTarget = snap.computed.fireNumber;
+    const pct = pat && fireTarget ? ((pat / fireTarget) * 100).toFixed(1) : null;
+    const prev = i > 0 ? getPatFromSnap(storicoData[i-1]) : null;
+    const delta = (pat !== null && prev !== null) ? pat - prev : null;
+
+    const dateStr = new Date(snap.timestamp).toLocaleDateString('it-IT', { day:'2-digit', month:'short', year:'numeric' });
+
+    const deltaHtml = delta !== null
+      ? `<span class="si-delta" style="background:${delta>=0?'rgba(61,214,140,.12)':'rgba(245,101,101,.12)'};color:${delta>=0?'var(--green)':'var(--red)'}">${delta>=0?'+':''}€${Math.abs(Math.round(delta)).toLocaleString('it-IT')}</span>`
+      : '';
+
+    const div = document.createElement('div');
+    div.className = 'storico-item';
+    div.innerHTML = `
+      <span class="si-date">${dateStr}</span>
+      <span class="si-label">${snap.label || '—'}</span>
+      <span class="si-val">${pat !== null ? '€ ' + Math.round(pat).toLocaleString('it-IT') : '—'}</span>
+      ${pct ? `<span class="si-delta" style="background:rgba(245,166,35,.1);color:var(--accent)">${pct}% FIRE</span>` : ''}
+      ${deltaHtml}
+      <button class="si-del" onclick="rimuoviStorico(${i})" title="Rimuovi">✕</button>
+    `;
+    listEl.appendChild(div);
+  });
+
+  // --- Stats aggregate ---
+  const pats = storicoData.map(s => getPatFromSnap(s)).filter(v => v !== null);
+  const targets = storicoData.map(s => s.computed.fireNumber);
+  const latestPat = pats[pats.length - 1];
+  const latestTarget = targets[targets.length - 1];
+  const firstPat = pats[0];
+  const crescitaTot = (firstPat != null && latestPat != null) ? latestPat - firstPat : null;
+  const mesiTra = storicoData.length >= 2
+    ? Math.round((new Date(storicoData[storicoData.length-1].timestamp) - new Date(storicoData[0].timestamp)) / (1000*60*60*24*30))
+    : null;
+  const crescitaMensile = (crescitaTot && mesiTra && mesiTra > 0) ? crescitaTot / mesiTra : null;
+
+  const statsEl = document.getElementById('progStats');
+  statsEl.innerHTML = `
+    <div class="prog-stat">
+      <div class="ps-val" style="color:var(--accent)">${latestPat != null ? '€'+Math.round(latestPat).toLocaleString('it-IT') : '—'}</div>
+      <div class="ps-label">Patrimonio attuale</div>
+    </div>
+    <div class="prog-stat">
+      <div class="ps-val" style="color:var(--green)">${latestPat && latestTarget ? ((latestPat/latestTarget)*100).toFixed(1)+'%' : '—'}</div>
+      <div class="ps-label">% del target FIRE</div>
+    </div>
+    <div class="prog-stat">
+      <div class="ps-val" style="color:${crescitaTot>=0?'var(--green)':'var(--red)'}">${crescitaTot !== null ? (crescitaTot>=0?'+':'')+'€'+Math.abs(Math.round(crescitaTot)).toLocaleString('it-IT') : '—'}</div>
+      <div class="ps-label">Crescita totale</div>
+    </div>
+    <div class="prog-stat">
+      <div class="ps-val" style="color:var(--blue)">${crescitaMensile !== null ? '€'+Math.round(crescitaMensile).toLocaleString('it-IT') : '—'}</div>
+      <div class="ps-label">Crescita media / mese</div>
+    </div>
+  `;
+
+  const chartLabels = storicoData.map(s => new Date(s.timestamp).toLocaleDateString('it-IT', {month:'short', year:'2-digit'}));
+  const patrimonioData = storicoData.map(s => getPatFromSnap(s));
+  const targetData = storicoData.map(s => s.computed.fireNumber);
+
+  // Piano teorico: proietta dal primo snapshot con i parametri del primo
+  const pianoData = (() => {
+    if (storicoData.length < 1) return [];
+    const s0 = storicoData[0];
+    const pat0 = getPatFromSnap(s0) || 0;
+    // Contributo e rendimento medi dagli asset del primo snapshot (o fallback)
+    const snap0assets = s0.assets || [];
+    const risp = snap0assets.length > 0
+      ? snap0assets.reduce((s,a) => s + (a.contributo||0), 0)
+      : 0;
+    const rendMedioAnnuo = snap0assets.length > 0
+      ? snap0assets.reduce((s,a) => s + (a.rendimento||7), 0) / snap0assets.length / 100
+      : 0.07;
+    const rendM = Math.pow(1 + rendMedioAnnuo, 1/12) - 1;
+    return storicoData.map((snap) => {
+      const mesi = Math.round((new Date(snap.timestamp) - new Date(s0.timestamp)) / (1000*60*60*24*30));
+      let p = pat0;
+      for (let m = 0; m < mesi; m++) p = p * (1 + rendM) + risp;
+      return Math.round(p);
+    });
+  })();
+
+  if (storicoChart) storicoChart.destroy();
+  const ctx = document.getElementById('storicoChart').getContext('2d');
+  storicoChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: 'Patrimonio reale',
+          data: patrimonioData,
+          borderColor: '#f5a623',
+          backgroundColor: 'rgba(245,166,35,.1)',
+          fill: false,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          tension: 0.3,
+          borderWidth: 2.5,
+        },
+        {
+          label: 'Piano teorico',
+          data: pianoData,
+          borderColor: '#60a5fa',
+          backgroundColor: 'transparent',
+          borderDash: [6, 4],
+          fill: false,
+          pointRadius: 3,
+          tension: 0.3,
+          borderWidth: 1.5,
+        },
+        {
+          label: 'FIRE Target',
+          data: targetData,
+          borderColor: '#3dd68c',
+          backgroundColor: 'transparent',
+          borderDash: [3, 3],
+          fill: false,
+          pointRadius: 0,
+          tension: 0,
+          borderWidth: 1.5,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#8b8f99', font: { size: 12 } } },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: ctx => {
+              if (ctx.raw === null) return null;
+              return ctx.dataset.label + ': ' + fmt(ctx.raw);
+            },
+            afterBody: (items) => {
+              const reale = items.find(i => i.dataset.label === 'Patrimonio reale');
+              const piano = items.find(i => i.dataset.label === 'Piano teorico');
+              if (reale && piano && reale.raw !== null && piano.raw !== null) {
+                const diff = reale.raw - piano.raw;
+                const pct = ((diff / piano.raw) * 100).toFixed(1);
+                return [`Vs. piano: ${diff >= 0 ? '+' : ''}${fmt(diff)} (${pct}%)`];
+              }
+              return [];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#8b8f99' }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: {
+          ticks: { color: '#8b8f99', callback: v => v >= 1e6 ? '€'+(v/1e6).toFixed(1)+'M' : '€'+(v/1000).toFixed(0)+'k' },
+          grid: { color: 'rgba(255,255,255,.04)' }
+        }
+      }
+    }
+  });
+
+  // --- Tabella dettaglio ---
+  const tbody = document.getElementById('storicoTableBody');
+  tbody.innerHTML = '';
+  storicoData.forEach((snap, i) => {
+    const pat  = getPatFromSnap(snap);
+    const target = snap.computed.fireNumber;
+    const pct  = pat !== null && target ? ((pat / target) * 100).toFixed(1) : null;
+    const piano = pianoData[i];
+    const prev = i > 0 ? getPatFromSnap(storicoData[i-1]) : null;
+    const delta = (pat !== null && prev !== null) ? pat - prev : null;
+    const inLinea = (pat !== null && piano !== null) ? pat >= piano * 0.95 : null;
+    const dateStr = new Date(snap.timestamp).toLocaleDateString('it-IT', {day:'2-digit', month:'short', year:'numeric'});
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${dateStr}</td>
+      <td>${snap.label || '—'}</td>
+      <td style="font-weight:700;color:var(--accent)">${pat !== null ? fmt(pat) : '—'}</td>
+      <td style="color:var(--muted)">${fmt(target)}</td>
+      <td>${pct ? `<span class="badge" style="background:rgba(245,166,35,.12);color:var(--accent)">${pct}%</span>` : '—'}</td>
+      <td>${delta !== null ? `<span style="color:${delta>=0?'var(--green)':'var(--red)'};font-weight:700">${delta>=0?'+':''}${fmt(Math.abs(delta))}</span>` : '—'}</td>
+      <td>${inLinea !== null ? (inLinea ? '<span class="badge badge-green">✅ Sì</span>' : '<span class="badge badge-red">⚠ Indietro</span>') : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function rimuoviStorico(i) {
+  storicoData.splice(i, 1);
+  if (storicoChart) { storicoChart.destroy(); storicoChart = null; }
+  renderStorico();
+}
+
+// Drag & drop per zona storico
+document.addEventListener('DOMContentLoaded', () => {
+  ['storicoZone','ripristinaZone'].forEach(id => {
+    const zone = document.getElementById(id);
+    if (!zone) return;
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); });
+  });
+});
+
+// ===========================
+// UPDATE ALL
+// ===========================
+function updateCharts() {
+  updatePieChart();
+}
+
+function updateAll() {
+  renderSpese();
+  renderAssets();
+  updateFireNumber();
+  updatePieChart();
+  calcCoast();
+  calcAnni();
+  calcFiscale();
+}
+
+// ===========================
+// INIT
+// ===========================
+updateAll();
+</script>
+</body>
+</html>
